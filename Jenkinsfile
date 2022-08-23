@@ -6,7 +6,7 @@ pipeline {
     }
     parameters {
         choice(name: 'BASE_INSTALLATION',
-                choices: ['WITH_BASE_INSTALLATION', 'NO'],
+                choices: ['WITH_BASE_INSTALLATION', 'YES'],
                 description: 'Choose to install the base installation on the server')
         
         string(name: 'IMAGE',
