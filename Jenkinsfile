@@ -18,7 +18,7 @@ pipeline {
                description: 'Artifactory URL')
 
         string(name: 'SERVER_URL',
-               defaultValue: 'ubuntu@ec2-3-121-186-210.eu-central-1.compute.amazonaws.com',
+               defaultValue: 'ubuntu@ec2-3-73-38-212.eu-central-1.compute.amazonaws.com',
                description: 'user@server Address for ssh connection')
     }
     
