@@ -5,6 +5,10 @@ pipeline {
         SERVER_LOGIN=credentials('linux')
     }
     parameters {
+        choice(name: 'BASE_INSTALLATION',
+                choices: ['WITH_BASE_INSTALLATION', 'NO'],
+                description: 'Choose to install the base installation on the server')
+        
         string(name: 'IMAGE',
                defaultValue: 'hello',
                description: 'Docker Image Name')
@@ -26,7 +30,7 @@ pipeline {
                 git branch: 'main', url: 'https://github.com/5IGE/ci-cd-test.git'
             }
         }
-                stage('Base installation') {
+        stage('Base installation') {
             when {
                 // Only deploy if the base installation is 'WITH_BASE_INSTALLATION'
                 expression { params.BASE_INSTALLATION == 'WITH_BASE_INSTALLATION' }
