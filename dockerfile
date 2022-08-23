@@ -1,4 +1,4 @@
 FROM alpine
-CMD ["echo","hello world1ddddddddddddddddddddddddddddddddddddddddddddddd"]
+CMD ["echo","hello world"]
 CMD ["ls"]
 CMD ["date"]
