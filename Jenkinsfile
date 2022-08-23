@@ -14,7 +14,7 @@ pipeline {
                description: 'Artifactory URL')
 
         string(name: 'SERVER_URL',
-               defaultValue: 'ubuntu@ec2-3-68-39-76.eu-central-1.compute.amazonaws.com',
+               defaultValue: 'ubuntu@ec2-3-121-186-210.eu-central-1.compute.amazonaws.com',
                description: 'user@server Address for ssh connection')
     }
     
@@ -23,7 +23,7 @@ pipeline {
             steps {
                 echo "Git checkout"
                 sh 'git --version'
-                git branch: 'main', url: 'https://github.com/helijunky/ci-cd-test.git'
+                git branch: 'main', url: 'https://github.com/5IGE/ci-cd-test.git'
             }
         }
         stage('Build Docker image') {
