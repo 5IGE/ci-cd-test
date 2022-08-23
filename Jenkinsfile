@@ -49,10 +49,8 @@ pipeline {
             steps {
                 echo "Build Docker image ${params.IMAGE}"
                 sh "docker build -t ${params.ARTIFACTORY_URL}/${params.IMAGE} ."
-                sh "docker run prune"
+                sh "docker prune"
                 sh "docker run ${params.ARTIFACTORY_URL}/${params.IMAGE}"
-                sh "docker run prune"
-
             }
         }
         stage('Push Docker image to jFrog') {
