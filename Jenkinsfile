@@ -49,6 +49,7 @@ pipeline {
             steps {
                 echo "Build Docker image ${params.IMAGE}"
                 sh "docker build -t ${params.ARTIFACTORY_URL}/${params.IMAGE} ."
+                sh "docker system prune"
                 sh "docker run ${params.ARTIFACTORY_URL}/${params.IMAGE}"
             }
         }
