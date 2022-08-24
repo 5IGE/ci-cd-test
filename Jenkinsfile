@@ -31,7 +31,7 @@ pipeline {
             steps {
                 echo "Git checkout (for demonstration only)"
                 sh 'git --version'
-                git branch: 'aws', url: 'https://github.com/5ESI/ci-cd-test.git'
+                git branch: 'aws', url: 'https://github.com/5IGE/ci-cd-test.git'
             }
         }
         stage('Pull Docker images') {
