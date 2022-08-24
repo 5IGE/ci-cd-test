@@ -6,11 +6,11 @@ pipeline {
     }
     parameters {
         choice(name: 'BASE_INSTALLATION',
-            choices: [ 'NO', 'WITH_BASE_INSTALLATION'],
+            choices: ['NO','WITH_BASE_INSTALLATION'],
             description: 'Choose to install the base installation on the server')
 
         choice(name: 'MONGODB',
-            choices: ['NO', 'REDEPLOY_MONGODB'],
+            choices: ['NO','REDEPLOY_MONGODB'],
             description: 'Choose to redeploy the mongodb on the server (loose user data)')
 
         string(name: 'ARTIFACTORY_URL',
@@ -22,7 +22,7 @@ pipeline {
                description: 'user for ssh connection')
 
         string(name: 'SERVER_FQDN',
-               defaultValue: 'ec2-3-121-186-210.eu-central-1.compute.amazonaws.com',
+               defaultValue: 'ec2-18-193-120-77.eu-central-1.compute.amazonaws.com',
                description: 'Server address for ssh connection')
     }
     
@@ -31,7 +31,7 @@ pipeline {
             steps {
                 echo "Git checkout (for demonstration only)"
                 sh 'git --version'
-                git branch: 'aws', url: 'https://github.com/5IGE/ci-cd-test.git'
+                git branch: 'main', url: 'https://github.com/helijunky/ci-cd-test.git'
             }
         }
         stage('Pull Docker images') {
@@ -39,8 +39,8 @@ pipeline {
                 echo "Build Docker image ${params.IMAGE}"
                 sh "docker pull mongo:5.0"
                 sh "docker tag mongo:5.0 ${params.ARTIFACTORY_URL}/mongo:5.0"
-                sh "docker pull rocket.chat:5.0.3"
-                sh "docker tag rocket.chat:5.0.3 ${params.ARTIFACTORY_URL}/rocket.chat:5.0.3"
+                sh "docker pull rocket.chat:4.8.1"
+                sh "docker tag rocket.chat ${params.ARTIFACTORY_URL}/rocket.chat:4.8.1"
             }
         }
         stage('Push Docker images to jFrog') {
@@ -48,7 +48,7 @@ pipeline {
                 echo "Push Docker image to jFrog"
                 sh "docker login ${params.ARTIFACTORY_URL} --username ${env.ARTIFACTORY_LOGIN_USR} --password ${env.ARTIFACTORY_LOGIN_PSW}"
                 sh "docker push ${params.ARTIFACTORY_URL}/mongo:5.0"
-                sh "docker push ${params.ARTIFACTORY_URL}/rocket.chat:5.0.3"
+                sh "docker push ${params.ARTIFACTORY_URL}/rocket.chat:4.8.1"
                 sh "docker logout ${params.ARTIFACTORY_URL}"
             }
         }
@@ -65,57 +65,44 @@ pipeline {
                     sh "ssh -o StrictHostKeyChecking=no -i ${env.SERVER_LOGIN} ${params.SSH_USER}@${params.SERVER_FQDN} 'echo \"deb [arch=\$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \$(lsb_release -cs) stable\" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null'"
                     sh "ssh -o StrictHostKeyChecking=no -i ${env.SERVER_LOGIN} ${params.SSH_USER}@${params.SERVER_FQDN} 'sudo apt-get update && sudo apt-get install docker-ce docker-ce-cli containerd.io docker-compose-plugin -y && sudo chmod 666 /var/run/docker.sock'"
                 }
-                sh "ssh -o StrictHostKeyChecking=no -i ${env.SERVER_LOGIN} ${params.SSH_USER}@${params.SERVER_FQDN} 'sudo wget -O /etc/nginx/sites-available/default https://raw.githubusercontent.com/helijunky/ci-cd-test/aws/nginx.conf'"
+                sh "ssh -o StrictHostKeyChecking=no -i ${env.SERVER_LOGIN} ${params.SSH_USER}@${params.SERVER_FQDN} 'sudo wget -O /etc/nginx/sites-available/default https://raw.githubusercontent.com/helijunky/ci-cd-test/k8s/nginx.conf'"
                 sh "ssh -o StrictHostKeyChecking=no -i ${env.SERVER_LOGIN} ${params.SSH_USER}@${params.SERVER_FQDN} 'sudo sed -i -e 's/SERVER_FQDN/${params.SERVER_FQDN}/g' /etc/nginx/sites-available/default'"
                 sh "ssh -o StrictHostKeyChecking=no -i ${env.SERVER_LOGIN} ${params.SSH_USER}@${params.SERVER_FQDN} 'sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/nginx/certificate.key -out /etc/nginx/certificate.crt -subj \"/C=CH/ST=BE/L=Bern/O=PTT/OU=Engel/CN=${params.SERVER_FQDN}/emailAddress=ptt@engel.com\"'"
                 sh "ssh -o StrictHostKeyChecking=no -i ${env.SERVER_LOGIN} ${params.SSH_USER}@${params.SERVER_FQDN} 'sudo chmod 400 /etc/nginx/certificate.key'"
                 sh "ssh -o StrictHostKeyChecking=no -i ${env.SERVER_LOGIN} ${params.SSH_USER}@${params.SERVER_FQDN} 'sudo openssl dhparam -out /etc/nginx/dhparams.pem 2048'"
-                sh "ssh -o StrictHostKeyChecking=no -i ${env.SERVER_LOGIN} ${params.SSH_USER}@${params.SERVER_FQDN} 'sudo service nginx configtest && sudo service nginx restart'"
+                //sh "ssh -o StrictHostKeyChecking=no -i ${env.SERVER_LOGIN} ${params.SSH_USER}@${params.SERVER_FQDN} 'sudo service nginx configtest && sudo service nginx restart'"
+
+                echo "Install and start Minikube"
+                catchError {
+                    sh "ssh -o StrictHostKeyChecking=no -i ${env.SERVER_LOGIN} ${params.SSH_USER}@${params.SERVER_FQDN} 'minikube delete'"
+                }
+                sh "ssh -o StrictHostKeyChecking=no -i ${env.SERVER_LOGIN} ${params.SSH_USER}@${params.SERVER_FQDN} 'curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube_latest_amd64.deb'"
+                sh "ssh -o StrictHostKeyChecking=no -i ${env.SERVER_LOGIN} ${params.SSH_USER}@${params.SERVER_FQDN} 'sudo dpkg -i minikube_latest_amd64.deb'"
+                sh "ssh -o StrictHostKeyChecking=no -i ${env.SERVER_LOGIN} ${params.SSH_USER}@${params.SERVER_FQDN} 'curl -LO \"https://dl.k8s.io/release/\$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl\"'"
+                sh "ssh -o StrictHostKeyChecking=no -i ${env.SERVER_LOGIN} ${params.SSH_USER}@${params.SERVER_FQDN} 'curl -LO \"https://dl.k8s.io/\$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl.sha256\"'"
+                sh "ssh -o StrictHostKeyChecking=no -i ${env.SERVER_LOGIN} ${params.SSH_USER}@${params.SERVER_FQDN} 'sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl'"
+                sh "ssh -o StrictHostKeyChecking=no -i ${env.SERVER_LOGIN} ${params.SSH_USER}@${params.SERVER_FQDN} 'sudo systemctl enable docker && sudo systemctl start docker'"
+                sh "ssh -o StrictHostKeyChecking=no -i ${env.SERVER_LOGIN} ${params.SSH_USER}@${params.SERVER_FQDN} 'minikube start'"
             }
         }
-        stage('Deploy on server') {
+        stage('Deploy with k8s on server') {
             steps {
                 script {
-                    echo "Deploy on server"
-                    sh "ssh -o StrictHostKeyChecking=no -i ${env.SERVER_LOGIN} ${params.SSH_USER}@${params.SERVER_FQDN} 'docker login ${params.ARTIFACTORY_URL} --username ${env.ARTIFACTORY_LOGIN_USR} --password ${env.ARTIFACTORY_LOGIN_PSW}'"
+                    echo "Deploy with k8s on server"
                     if (params.MONGODB == 'REDEPLOY_MONGODB') {
-                        sh "ssh -o StrictHostKeyChecking=no -i ${env.SERVER_LOGIN} ${params.SSH_USER}@${params.SERVER_FQDN} 'docker pull ${params.ARTIFACTORY_URL}/mongo:5.0'"
+                        sh "ssh -o StrictHostKeyChecking=no -i ${env.SERVER_LOGIN} ${params.SSH_USER}@${params.SERVER_FQDN} 'kubectl apply -f https://raw.githubusercontent.com/helijunky/ci-cd-test/k8s/mongo.yaml'"
+                        sleep 90
+                        sh "ssh -o StrictHostKeyChecking=no -i ${env.SERVER_LOGIN} ${params.SSH_USER}@${params.SERVER_FQDN} 'kubectl exec -it rocketmongo-0 -- mongo --eval \"printjson(rs.initiate())\"'"
                     }
-                    sh "ssh -o StrictHostKeyChecking=no -i ${env.SERVER_LOGIN} ${params.SSH_USER}@${params.SERVER_FQDN} 'docker pull ${params.ARTIFACTORY_URL}/rocket.chat:5.0.3'"
-                    sh "ssh -o StrictHostKeyChecking=no -i ${env.SERVER_LOGIN} ${params.SSH_USER}@${params.SERVER_FQDN} 'docker logout ${params.ARTIFACTORY_URL}'"
+                    sh "ssh -o StrictHostKeyChecking=no -i ${env.SERVER_LOGIN} ${params.SSH_USER}@${params.SERVER_FQDN} 'kubectl apply -f https://raw.githubusercontent.com/helijunky/ci-cd-test/k8s/rocketchat.yaml'"
+                    sleep 90
+                    PROXY_URL = (sh(script: "ssh -o StrictHostKeyChecking=no -i ${env.SERVER_LOGIN} ${params.SSH_USER}@${params.SERVER_FQDN} 'minikube service rocketchat-server --url'", returnStdout: true)).trim()
+                    sh "ssh -o StrictHostKeyChecking=no -i ${env.SERVER_LOGIN} ${params.SSH_USER}@${params.SERVER_FQDN} 'sudo sed -i \"/proxy_pass/c\\\\            proxy_pass $PROXY_URL/;\" /etc/nginx/sites-available/default'"
+                    sh "ssh -o StrictHostKeyChecking=no -i ${env.SERVER_LOGIN} ${params.SSH_USER}@${params.SERVER_FQDN} 'sudo service nginx configtest && sudo service nginx restart'"
                 }
             }
         }
-        stage('Stop previous instance on server') {
-            steps {
-                script {
-                    echo "Stopping previous instances on server"
-                    catchError {
-                    sh "ssh -o StrictHostKeyChecking=no -i ${env.SERVER_LOGIN} ${params.SSH_USER}@${params.SERVER_FQDN} 'docker stop rocketchat'"
-                    }
-                    if (params.MONGODB == 'REDEPLOY_MONGODB') {
-                        catchError {
-                            sh "ssh -o StrictHostKeyChecking=no -i ${env.SERVER_LOGIN} ${params.SSH_USER}@${params.SERVER_FQDN} 'docker stop db'"
-                        }
-                    }
-                }
-            }
-        }
-        stage('Start new instance on server') {
-            steps {
-                script {
-                    echo "Starting new images Server"
-                    if (params.MONGODB == 'REDEPLOY_MONGODB') {
-                        sh "ssh -o StrictHostKeyChecking=no -i ${env.SERVER_LOGIN} ${params.SSH_USER}@${params.SERVER_FQDN} 'docker run --rm --name db -d ${params.ARTIFACTORY_URL}/mongo:5.0 --replSet rs0 --oplogSize 128'"
-                        sleep 5
-                        sh "ssh -o StrictHostKeyChecking=no -i ${env.SERVER_LOGIN} ${params.SSH_USER}@${params.SERVER_FQDN} 'docker exec -i db mongo --eval \"printjson(rs.initiate())\"'"
-                    }
-                sh "ssh -o StrictHostKeyChecking=no -i ${env.SERVER_LOGIN} ${params.SSH_USER}@${params.SERVER_FQDN} 'docker run --rm --name rocketchat -p 3000:3000 --link db --env ROOT_URL=http://localhost --env MONGO_OPLOG_URL=mongodb://db:27017/local -d ${params.ARTIFACTORY_URL}/rocket.chat:5.0.3'"
-                sleep 60
-                }
-            }
-        }
-        stage('Function test') {
+       stage('Function test') {
             steps {
                 echo "Function test"
                 sh "wget --no-check-certificate https://${params.SERVER_FQDN}/"
