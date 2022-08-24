@@ -39,8 +39,8 @@ pipeline {
                 echo "Build Docker image ${params.IMAGE}"
                 sh "docker pull mongo:5.0"
                 sh "docker tag mongo:5.0 ${params.ARTIFACTORY_URL}/mongo:5.0"
-                sh "docker pull rocket.chat:5.0.0"
-                sh "docker tag rocket.chat:5.0.0 ${params.ARTIFACTORY_URL}/rocket.chat:5.0.0"
+                sh "docker pull rocket.chat:5.0.3"
+                sh "docker tag rocket.chat:5.0.3 ${params.ARTIFACTORY_URL}/rocket.chat:5.0.3"
             }
         }
         stage('Push Docker images to jFrog') {
@@ -48,7 +48,7 @@ pipeline {
                 echo "Push Docker image to jFrog"
                 sh "docker login ${params.ARTIFACTORY_URL} --username ${env.ARTIFACTORY_LOGIN_USR} --password ${env.ARTIFACTORY_LOGIN_PSW}"
                 sh "docker push ${params.ARTIFACTORY_URL}/mongo:5.0"
-                sh "docker push ${params.ARTIFACTORY_URL}/rocket.chat:5.0.0"
+                sh "docker push ${params.ARTIFACTORY_URL}/rocket.chat:5.0.3"
                 sh "docker logout ${params.ARTIFACTORY_URL}"
             }
         }
