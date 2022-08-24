@@ -1,2 +1,2 @@
 # ci-cd-test Jenkins Pipeline
-02_RocketChat_AWS
+Rocket Chat with K8S
